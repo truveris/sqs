@@ -14,15 +14,17 @@ import (
 )
 
 var (
+	// Ref:
+	// http://docs.aws.amazon.com/general/latest/gr/rande.html#sqs_region
 	EndPoints = map[string]string{
 		"ap-northeast-1": "https://sqs.ap-northeast-1.amazonaws.com",
 		"ap-southeast-1": "https://sqs.ap-southeast-1.amazonaws.com",
-		"ap-southeast-2": "https://sqs.ap-southeast-1.amazonaws.com",
-		"eu-west-1":      "https://sqs.ap-northeast-1.amazonaws.com",
-		"sa-east-1":      "https://sqs.ap-northeast-1.amazonaws.com",
-		"us-east-1":      "https://sqs.ap-northeast-1.amazonaws.com",
-		"us-west-1":      "https://sqs.ap-northeast-1.amazonaws.com",
-		"us-west-2":      "https://sqs.ap-northeast-1.amazonaws.com",
+		"ap-southeast-2": "https://sqs.ap-southeast-2.amazonaws.com",
+		"eu-west-1":      "https://sqs.eu-west-1.amazonaws.com",
+		"sa-east-1":      "https://sqs.sa-east-1.amazonaws.com",
+		"us-east-1":      "https://sqs.us-east-1.amazonaws.com",
+		"us-west-1":      "https://sqs.us-west-1.amazonaws.com",
+		"us-west-2":      "https://sqs.us-west-2.amazonaws.com",
 	}
 )
 
@@ -136,11 +138,12 @@ func (client *Client) SendMessage(queueURL, message string) error {
 	return nil
 }
 
-// Create a queue and return its URL. This function can be used to obtain the
-// QueueURL for a queue even if it already exists.
-func (client *Client) CreateQueue(name string) (string, error) {
+// Create a queue using the provided attributes and return its URL. This
+// function can be used to obtain the QueueURL for a queue even if it already
+// exists.
+func (client *Client) CreateQueueWithAttributes(name string, attributes CreateQueueAttributes) (string, error) {
 	var parsedResponse CreateQueueResult
-	url := BuildCreateQueueURL(client.EndPointURL, name)
+	url := buildCreateQueueURL(client.EndPointURL, name, attributes)
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -163,4 +166,11 @@ func (client *Client) CreateQueue(name string) (string, error) {
 	}
 
 	return parsedResponse.QueueURL, nil
+}
+
+// Create a queue with default parameters and return its URL. This function can
+// be used to obtain the QueueURL for a queue even if it already exists.
+func (client *Client) CreateQueue(name string) (string, error) {
+	url, err := client.CreateQueueWithAttributes(name, CreateQueueAttributes{})
+	return url, err
 }

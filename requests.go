@@ -13,8 +13,6 @@ const (
 	SQSContentType      = "application/x-www-form-urlencoded"
 )
 
-// strings.Replace(sqs.Region.EC2Endpoint, "ec2", "sqs", 1) + path
-
 // Build the data portion of a Message POST API call.
 func BuildSendMessageData(msg string) string {
 	query := url.Values{}
@@ -46,24 +44,5 @@ func BuildDeleteMessageURL(queueURL, receipt string) string {
 	query.Set("Version", SQSAPIVersion)
 	query.Set("SignatureVersion", SQSSignatureVersion)
 	url := queueURL + "?" + query.Encode()
-	return url
-}
-
-// Build the URL to conduct a CreateMessage GET API call.
-func BuildCreateQueueURL(baseURL, name string) string {
-	query := url.Values{}
-	query.Set("Action", "CreateQueue")
-	query.Set("QueueName", name)
-	query.Set("Attribute.1.Name", "MaximumMessageSize")
-	query.Set("Attribute.1.Value", "4096")
-	query.Set("Attribute.2.Name", "ReceiveMessageWaitTimeSeconds")
-	query.Set("Attribute.2.Value", "20")
-	query.Set("Attribute.3.Name", "VisibilityTimeout")
-	query.Set("Attribute.3.Value", "10")
-	query.Set("Attribute.4.Name", "MessageRetentionPeriod")
-	query.Set("Attribute.4.Value", "300")
-	query.Set("Version", SQSAPIVersion)
-	query.Set("SignatureVersion", SQSSignatureVersion)
-	url := baseURL + "?" + query.Encode()
 	return url
 }
