@@ -20,8 +20,8 @@ if err != nil {
 }
 ```
 
-## Example: Simplified []byte channel
-This example returns a simple []bytes channel and an error channel:
+## Example: Simplified string channel
+This example returns a simple string channel and an error channel:
 
 ```go
 import (
@@ -42,8 +42,8 @@ func main() {
 			case err <- errch:
 				// do your error thing
 			case body <- ch:
-				// do your thing, body is a bag of bytes
-				fmt.Printf("body: %s", string(body))
+				// do your thing, body is a string
+				fmt.Printf("body: " + body)
 		}
 	}
 }
