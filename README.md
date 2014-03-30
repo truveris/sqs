@@ -49,10 +49,10 @@ func main() {
 }
 ```
 
-Using Body() does not allow you to acknowledge the reception of the message,
+Using ReadBody() does not allow you to acknowledge the reception of the message,
 the message is deleted automatically after being delivered to the channel.  If
 you want to allow the message to go back in the queue automatically in case of
-failure, use the sqschan.Msg().
+failure, use the sqschan.ReadMsg().
 
 ## Example: Message channel
 This example allows the use of the entire response with all its meta-data:
@@ -83,7 +83,7 @@ func main() {
 }
 ```
 
-To the contrary of Body(), you are obligated to acknowledge the reception of
+To the contrary of ReadBody(), you are obligated to acknowledge the reception of
 the messages by deleting them. You also have access to all the meta-data
 shipped with the message: msg.UserID, msg.ReceiptHandle, etc.
 
