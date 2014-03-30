@@ -94,6 +94,7 @@ func (client *Client) GetMessage(queueURL string) (*Message, error) {
 	}
 
 	msg := &Message{
+		QueueURL:      queueURL,
 		Body:          m.Bodies[0],
 		ReceiptHandle: m.ReceiptHandles[0],
 		UserID:        m.Values[0],
