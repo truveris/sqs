@@ -8,14 +8,10 @@ import (
 )
 
 
-func ReadBody(client sqs.Client, name string) (<-chan string, <-chan error, error) {
+
+func ReadBodyURL(client *sqs.Client, url string) (<-chan string, <-chan error, error) {
 	ch := make(chan string)
 	errch := make(chan error)
-
-	url, err := client.CreateQueue(name)
-	if err != nil {
-		return nil, nil, err
-	}
 
 	go func() {
 		for {
@@ -38,14 +34,18 @@ func ReadBody(client sqs.Client, name string) (<-chan string, <-chan error, erro
 	return ch, errch, nil
 }
 
-func ReadMsg(client sqs.Client, name string) (<-chan sqs.Message, <-chan error, error) {
-	ch := make(chan sqs.Message)
-	errch := make(chan error)
-
+func ReadBody(client *sqs.Client, name string) (<-chan string, <-chan error, error) {
 	url, err := client.CreateQueue(name)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	return ReadBodyURL(client, url)
+}
+
+func ReadMsgURL(client *sqs.Client, url string) (<-chan sqs.Message, <-chan error, error) {
+	ch := make(chan sqs.Message)
+	errch := make(chan error)
 
 	go func() {
 		for {
@@ -55,9 +55,22 @@ func ReadMsg(client sqs.Client, name string) (<-chan sqs.Message, <-chan error, 
 				continue
 			}
 
+			if msg == nil {
+				continue
+			}
+
 			ch <- *msg
 		}
 	}()
 
 	return ch, errch, nil
+}
+
+func ReadMsg(client *sqs.Client, name string) (<-chan sqs.Message, <-chan error, error) {
+	url, err := client.CreateQueue(name)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return ReadMsgURL(client, url)
 }

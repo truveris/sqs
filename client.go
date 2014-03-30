@@ -63,6 +63,7 @@ func (client *Client) Get(url string) (*http.Response, error) {
 
 // Return a single message body, with its ReceiptHandle. A lack of message is
 // not considered an error but both strings will be empty.
+// TODO: this should be a wrapper around a GetMessages function...
 func (client *Client) GetMessage(queueURL string) (*Message, error) {
 	var m ReceiveMessageResult
 

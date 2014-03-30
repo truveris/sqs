@@ -32,7 +32,7 @@ import (
 func main() {
 	client := sqs.Client(...)
 
-	ch, errch, err := sqschan.ReadRawBody(client, "my-queue-name")
+	ch, errch, err := sqschan.ReadBody(client, "my-queue-name")
 	if err != nil {
 		// do your thing
 	}
