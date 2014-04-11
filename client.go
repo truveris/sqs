@@ -66,7 +66,9 @@ func (client *Client) Get(url string) (*http.Response, error) {
 func (client *Client) GetSingleMessageFromRequest(request *SQSRequest) (*Message, error) {
 	var m ReceiveMessageResult
 
+	// These two settings are required for this function to function.
 	request.Set("MaxNumberOfMessages", "1")
+	request.Set("AttributeName", "SenderId")
 
 	resp, err := client.Get(request.URL())
 	if err != nil {
