@@ -14,7 +14,10 @@ func IncomingFromURL(client *sqs.Client, url string) (<-chan sqs.Message, <-chan
 
 	go func() {
 		for {
-			msg, err := client.GetSingleMessage(url)
+			req := sqs.NewReceiveMessageRequest(url)
+			req.Set("WaitTimeSeconds", "20")
+
+			msg, err := client.GetSingleMessageFromRequest(req)
 			if err != nil {
 				errch <- err
 				continue
