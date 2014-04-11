@@ -8,48 +8,13 @@ import (
 )
 
 
-
-func ReadBodyURL(client *sqs.Client, url string) (<-chan string, <-chan error, error) {
-	ch := make(chan string)
-	errch := make(chan error)
-
-	go func() {
-		for {
-			msg, err := client.GetMessage(url)
-			if err != nil {
-				errch <- err
-				continue
-			}
-
-			err = client.DeleteMessage(msg.QueueURL, msg.ReceiptHandle)
-			if err != nil {
-				errch <- err
-				continue
-			}
-
-			ch <- msg.Body
-		}
-	}()
-
-	return ch, errch, nil
-}
-
-func ReadBody(client *sqs.Client, name string) (<-chan string, <-chan error, error) {
-	url, err := client.CreateQueue(name)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return ReadBodyURL(client, url)
-}
-
-func ReadMsgURL(client *sqs.Client, url string) (<-chan sqs.Message, <-chan error, error) {
+func IncomingFromURL(client *sqs.Client, url string) (<-chan sqs.Message, <-chan error, error) {
 	ch := make(chan sqs.Message)
 	errch := make(chan error)
 
 	go func() {
 		for {
-			msg, err := client.GetMessage(url)
+			msg, err := client.GetSingleMessage(url)
 			if err != nil {
 				errch <- err
 				continue
@@ -66,11 +31,38 @@ func ReadMsgURL(client *sqs.Client, url string) (<-chan sqs.Message, <-chan erro
 	return ch, errch, nil
 }
 
-func ReadMsg(client *sqs.Client, name string) (<-chan sqs.Message, <-chan error, error) {
+func Incoming(client *sqs.Client, name string) (<-chan sqs.Message, <-chan error, error) {
 	url, err := client.CreateQueue(name)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return ReadMsgURL(client, url)
+	return IncomingFromURL(client, url)
+}
+
+// Returns a channel that will forward all the data to the provided queue.
+func OutgoingFromURL(client *sqs.Client, url string) (chan string, chan error, error) {
+	ch := make(chan string)
+	errch := make(chan error)
+
+	go func() {
+		for line := range ch {
+			err := client.SendMessage(url, line)
+			if err != nil {
+				errch <- err
+				continue
+			}
+		}
+	}()
+
+	return ch, errch, nil
+}
+
+func Outgoing(client *sqs.Client, name string) (chan string, chan error, error) {
+	url, err := client.CreateQueue(name)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return OutgoingFromURL(client, url)
 }

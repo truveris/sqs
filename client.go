@@ -62,14 +62,13 @@ func (client *Client) Get(url string) (*http.Response, error) {
 }
 
 // Return a single message body, with its ReceiptHandle. A lack of message is
-// not considered an error but both strings will be empty.
-// TODO: this should be a wrapper around a GetMessages function...
-func (client *Client) GetMessage(queueURL string) (*Message, error) {
+// not considered an error but *Message will be nil.
+func (client *Client) GetSingleMessageFromRequest(request *SQSRequest) (*Message, error) {
 	var m ReceiveMessageResult
 
-	url := BuildReceiveMessageURL(queueURL)
+	request.Set("MaxNumberOfMessages", "1")
 
-	resp, err := client.Get(url)
+	resp, err := client.Get(request.URL())
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func (client *Client) GetMessage(queueURL string) (*Message, error) {
 	}
 
 	msg := &Message{
-		QueueURL:      queueURL,
+		QueueURL:      request.QueueURL,
 		Body:          m.Bodies[0],
 		ReceiptHandle: m.ReceiptHandles[0],
 		UserID:        m.Values[0],
@@ -104,10 +103,17 @@ func (client *Client) GetMessage(queueURL string) (*Message, error) {
 	return msg, nil
 }
 
+// Return a single message body, with its ReceiptHandle. A lack of message is
+// not considered an error but the return message will be nil.
+func (client *Client) GetSingleMessage(url string) (*Message, error) {
+	request := NewReceiveMessageRequest(url)
+	return client.GetSingleMessageFromRequest(request)
+}
+
 // Conduct a DeleteMessage API call on the given queue, using the receipt
 // handle from a previously fetched message.
 func (client *Client) DeleteMessage(queueURL, receipt string) error {
-	url := BuildDeleteMessageURL(queueURL, receipt)
+	url := NewDeleteMessageRequest(queueURL, receipt).URL()
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -120,7 +126,7 @@ func (client *Client) DeleteMessage(queueURL, receipt string) error {
 
 // Conduct a SendMessage API call (POST) on the given queue.
 func (client *Client) SendMessage(queueURL, message string) error {
-	data := BuildSendMessageData(message)
+	data := NewSendMessageRequest(queueURL, message).Query()
 
 	resp, err := client.Post(queueURL, data)
 	if err != nil {

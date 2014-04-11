@@ -4,7 +4,8 @@
 package sqs
 
 import (
-	"net/url"
+	neturl "net/url"
+	"strconv"
 )
 
 const (
@@ -13,36 +14,60 @@ const (
 	SQSContentType      = "application/x-www-form-urlencoded"
 )
 
+type SQSRequest struct {
+	Values   *neturl.Values
+	QueueURL string
+}
+
+func (req *SQSRequest) Set(key, value string) {
+	req.Values.Set(key, value)
+}
+
+func (req *SQSRequest) Query() string {
+	return req.Values.Encode()
+}
+
+func (req *SQSRequest) URL() string {
+	return req.QueueURL + "?" + req.Query()
+}
+
+// Create a basic req for all SQS requests.
+func NewRequest(url, action string) *SQSRequest {
+	req := &SQSRequest{
+		Values:   &neturl.Values{},
+		QueueURL: url,
+	}
+	req.Set("Version", SQSAPIVersion)
+	req.Set("SignatureVersion", SQSSignatureVersion)
+	req.Set("Action", action)
+	return req
+}
+
 // Build the data portion of a Message POST API call.
-func BuildSendMessageData(msg string) string {
-	query := url.Values{}
-	query.Set("Action", "SendMessage")
-	query.Set("Version", SQSAPIVersion)
-	query.Set("SignatureVersion", SQSSignatureVersion)
-	query.Set("MessageBody", msg)
-	return query.Encode()
+func NewSendMessageRequest(url, body string) *SQSRequest {
+	req := NewRequest(url, "SendMessage")
+	req.Set("MessageBody", body)
+	return req
 }
 
 // Build the URL to conduct a ReceiveMessage GET API call.
-func BuildReceiveMessageURL(queueURL string) string {
-	query := url.Values{}
-	query.Set("Action", "ReceiveMessage")
-	query.Set("AttributeName", "SenderId")
-	query.Set("Version", SQSAPIVersion)
-	query.Set("SignatureVersion", SQSSignatureVersion)
-	query.Set("WaitTimeSeconds", "20")
-	query.Set("MaxNumberOfMessages", "1")
-	url := queueURL + "?" + query.Encode()
-	return url
+func NewReceiveMessageRequest(url string) *SQSRequest {
+	req := NewRequest(url, "ReceiveMessage")
+	return req
+}
+
+// Build the URL to conduct a ReceiveMessage GET API call.
+func NewLongPollingReceiveSingleMessageRequest(url string, waitTimeSeconds int64) *SQSRequest {
+	req := NewRequest(url, "ReceiveMessage")
+	req.Set("AttributeName", "SenderId")
+	req.Set("WaitTimeSeconds", strconv.FormatInt(waitTimeSeconds, 10))
+	req.Set("MaxNumberOfMessages", "1")
+	return req
 }
 
 // Build the URL to conduct a DeleteMessage GET API call.
-func BuildDeleteMessageURL(queueURL, receipt string) string {
-	query := url.Values{}
-	query.Set("Action", "DeleteMessage")
-	query.Set("ReceiptHandle", receipt)
-	query.Set("Version", SQSAPIVersion)
-	query.Set("SignatureVersion", SQSSignatureVersion)
-	url := queueURL + "?" + query.Encode()
-	return url
+func NewDeleteMessageRequest(url, receipt string) *SQSRequest {
+	req := NewRequest(url, "DeleteMessage")
+	req.Set("ReceiptHandle", receipt)
+	return req
 }
