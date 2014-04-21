@@ -63,7 +63,7 @@ func (client *Client) Get(url string) (*http.Response, error) {
 
 // Return a single message body, with its ReceiptHandle. A lack of message is
 // not considered an error but *Message will be nil.
-func (client *Client) GetSingleMessageFromRequest(request *SQSRequest) (*Message, error) {
+func (client *Client) GetSingleMessageFromRequest(request *Request) (*Message, error) {
 	var m ReceiveMessageResult
 
 	// These two settings are required for this function to function.
@@ -114,8 +114,22 @@ func (client *Client) GetSingleMessage(url string) (*Message, error) {
 
 // Conduct a DeleteMessage API call on the given queue, using the receipt
 // handle from a previously fetched message.
-func (client *Client) DeleteMessage(queueURL, receipt string) error {
+func (client *Client) DeleteMessageFromReceipt(queueURL, receipt string) error {
 	url := NewDeleteMessageRequest(queueURL, receipt).URL()
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return nil
+}
+
+// Conduct a DeleteMessage API call on the given queue, using the receipt
+// handle from a previously fetched message.
+func (client *Client) DeleteMessage(msg *Message) error {
+	url := NewDeleteMessageRequest(msg.QueueURL, msg.ReceiptHandle).URL()
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -146,6 +160,34 @@ func (client *Client) SendMessage(queueURL, message string) error {
 	}
 
 	return nil
+}
+
+// Get the queue URL from its name.
+func (client *Client) GetQueueURL(name string) (string, error) {
+	var parsedResponse GetQueueURLResult
+	url := NewGetQueueURLRequest(client.EndPointURL, name).URL()
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != 200 {
+		return "", errors.New(string(body))
+	}
+
+	err = xml.Unmarshal(body, &parsedResponse)
+	if err != nil {
+		return "", err
+	}
+
+	return parsedResponse.QueueURL, nil
 }
 
 // Create a queue using the provided attributes and return its URL. This

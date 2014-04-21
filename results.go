@@ -14,3 +14,7 @@ type ReceiveMessageResult struct {
 type CreateQueueResult struct {
 	QueueURL string `xml:"CreateQueueResult>QueueUrl"`
 }
+
+type GetQueueURLResult struct {
+	QueueURL string `xml:"GetQueueUrlResult>QueueUrl"`
+}

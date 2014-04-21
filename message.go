@@ -6,7 +6,7 @@ package sqs
 type Message struct {
 	// This is not part of the data received from the SQS servers, it is
 	// assigned internally to keep track of where this message come from.
-	QueueURL      string
+	QueueURL string
 
 	Body          string
 	ReceiptHandle string

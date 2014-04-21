@@ -8,8 +8,8 @@ import (
 )
 
 
-func IncomingFromURL(client *sqs.Client, url string) (<-chan sqs.Message, <-chan error, error) {
-	ch := make(chan sqs.Message)
+func IncomingFromURL(client *sqs.Client, url string) (<-chan *sqs.Message, <-chan error, error) {
+	ch := make(chan *sqs.Message)
 	errch := make(chan error)
 
 	go func() {
@@ -27,14 +27,14 @@ func IncomingFromURL(client *sqs.Client, url string) (<-chan sqs.Message, <-chan
 				continue
 			}
 
-			ch <- *msg
+			ch <- msg
 		}
 	}()
 
 	return ch, errch, nil
 }
 
-func Incoming(client *sqs.Client, name string) (<-chan sqs.Message, <-chan error, error) {
+func Incoming(client *sqs.Client, name string) (<-chan *sqs.Message, <-chan error, error) {
 	url, err := client.CreateQueue(name)
 	if err != nil {
 		return nil, nil, err
