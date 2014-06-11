@@ -7,8 +7,10 @@ import (
 	"encoding/xml"
 	"errors"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/mikedewar/aws4"
 )
@@ -33,6 +35,10 @@ type Client struct {
 	EndPointURL string
 }
 
+func dialTimeout(network, addr string) (net.Conn, error) {
+	return net.DialTimeout(network, addr, 25 * time.Second)
+}
+
 func NewClient(AccessKey, SecretKey, RegionCode string) (*Client, error) {
 	keys := &aws4.Keys{
 		AccessKey: AccessKey,
@@ -44,8 +50,11 @@ func NewClient(AccessKey, SecretKey, RegionCode string) (*Client, error) {
 		return nil, errors.New("Unknown region: " + RegionCode)
 	}
 
+	transport := &http.Transport{Dial: dialTimeout}
+	client := &http.Client{Transport: transport}
+
 	return &Client{
-		Aws4Client:  &aws4.Client{Keys: keys},
+		Aws4Client:  &aws4.Client{Keys: keys, Client: client},
 		EndPointURL: EndPointURL,
 	}, nil
 }
