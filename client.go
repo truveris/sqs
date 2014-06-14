@@ -28,6 +28,8 @@ var (
 		"us-west-1":      "https://sqs.us-west-1.amazonaws.com",
 		"us-west-2":      "https://sqs.us-west-2.amazonaws.com",
 	}
+
+	HTTPTimeout = 25 * time.Second
 )
 
 type Client struct {
@@ -36,7 +38,7 @@ type Client struct {
 }
 
 func dialTimeout(network, addr string) (net.Conn, error) {
-	return net.DialTimeout(network, addr, 25 * time.Second)
+	return net.DialTimeout(network, addr, HTTPTimeout)
 }
 
 func NewClient(AccessKey, SecretKey, RegionCode string) (*Client, error) {
@@ -50,7 +52,7 @@ func NewClient(AccessKey, SecretKey, RegionCode string) (*Client, error) {
 		return nil, errors.New("Unknown region: " + RegionCode)
 	}
 
-	transport := &http.Transport{Dial: dialTimeout}
+	transport := &http.Transport{Dial: dialTimeout, ResponseHeaderTimeout: HTTPTimeout}
 	client := &http.Client{Transport: transport}
 
 	return &Client{
