@@ -1,4 +1,4 @@
-// Copyright 2014, Truveris Inc. All Rights Reserved.
+// Copyright 2014-2015, Truveris Inc. All Rights Reserved.
 // Use of this source code is governed by the ISC license in the LICENSE file.
 
 package sqs
@@ -74,11 +74,11 @@ func (client *Client) Get(url string) (*http.Response, error) {
 
 // Return a single message body, with its ReceiptHandle. A lack of message is
 // not considered an error but *Message will be nil.
-func (client *Client) GetSingleMessageFromRequest(request *Request) (*Message, error) {
+func (client *Client) GetMessagesFromRequest(request *Request) ([]*Message, error) {
 	var m ReceiveMessageResult
+	var messages []*Message
 
 	// These two settings are required for this function to function.
-	request.Set("MaxNumberOfMessages", "1")
 	request.Set("AttributeName", "SenderId")
 
 	resp, err := client.Get(request.URL())
@@ -101,26 +101,39 @@ func (client *Client) GetSingleMessageFromRequest(request *Request) (*Message, e
 		return nil, err
 	}
 
-	// The API call is build to only return one or zero messages.
-	if len(m.Bodies) != 1 || len(m.Values) != 1 {
-		return nil, nil
+	for i := 0; i < len(m.Bodies); i++ {
+		msg := &Message{
+			QueueURL:      request.QueueURL,
+			Body:          m.Bodies[i],
+			ReceiptHandle: m.ReceiptHandles[i],
+			UserID:        m.Values[i],
+		}
+
+		messages = append(messages, msg)
 	}
 
-	msg := &Message{
-		QueueURL:      request.QueueURL,
-		Body:          m.Bodies[0],
-		ReceiptHandle: m.ReceiptHandles[0],
-		UserID:        m.Values[0],
-	}
-
-	return msg, nil
+	return messages, nil
 }
 
-// Return a single message body, with its ReceiptHandle. A lack of message is
-// not considered an error but the return message will be nil.
+// Return a single message with its ReceiptHandle. A lack of message is not
+// considered an error but the return message will be nil.
 func (client *Client) GetSingleMessage(url string) (*Message, error) {
 	request := NewReceiveMessageRequest(url)
-	return client.GetSingleMessageFromRequest(request)
+	request.Set("MaxNumberOfMessages", "1")
+	messages, err := client.GetMessagesFromRequest(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return messages[0], nil
+}
+
+// Return queue messages, with its ReceiptHandle. A lack of message is
+// not considered an error but the return message will be nil.
+func (client *Client) GetMessages(url string) ([]*Message, error) {
+	request := NewReceiveMessageRequest(url)
+	request.Set("MaxNumberOfMessages", "10")
+	return client.GetMessagesFromRequest(request)
 }
 
 // Conduct a DeleteMessage API call on the given queue, using the receipt
