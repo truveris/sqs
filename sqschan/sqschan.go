@@ -1,4 +1,4 @@
-// Copyright 2014, Truveris Inc. All Rights Reserved.
+// Copyright 2014-2015, Truveris Inc. All Rights Reserved.
 // Use of this source code is governed by the ISC license in the LICENSE file.
 
 package sqschan
@@ -7,7 +7,8 @@ import (
 	"github.com/truveris/sqs"
 )
 
-
+// IncomingFromURL creates a receiving channel from the provided queue URL.  An
+// error channel is created as well in case any error is encountered.
 func IncomingFromURL(client *sqs.Client, url string) (<-chan *sqs.Message, <-chan error, error) {
 	ch := make(chan *sqs.Message)
 	errch := make(chan error)
@@ -16,24 +17,25 @@ func IncomingFromURL(client *sqs.Client, url string) (<-chan *sqs.Message, <-cha
 		for {
 			req := sqs.NewReceiveMessageRequest(url)
 			req.Set("WaitTimeSeconds", "20")
+			req.Set("MaxNumberOfMessages", "10")
 
-			msg, err := client.GetSingleMessageFromRequest(req)
+			msgs, err := client.GetMessagesFromRequest(req)
 			if err != nil {
 				errch <- err
 				continue
 			}
 
-			if msg == nil {
-				continue
+			for _, msg := range msgs {
+				ch <- msg
 			}
-
-			ch <- msg
 		}
 	}()
 
 	return ch, errch, nil
 }
 
+// Incoming creates a receiving channel from the provided queue name as well as
+// an error channel in case any error occurs receiving messages.
 func Incoming(client *sqs.Client, name string) (<-chan *sqs.Message, <-chan error, error) {
 	url, err := client.CreateQueue(name)
 	if err != nil {
@@ -43,7 +45,9 @@ func Incoming(client *sqs.Client, name string) (<-chan *sqs.Message, <-chan erro
 	return IncomingFromURL(client, url)
 }
 
-// Returns a channel that will forward all the data to the provided queue.
+// OutgoingFromURL creates a channel from a queue URL that will forward all the
+// data to the provided queue.  An error channel is also provided in case any
+// error occurs during the transmission.
 func OutgoingFromURL(client *sqs.Client, url string) (chan string, chan error, error) {
 	ch := make(chan string)
 	errch := make(chan error)
@@ -61,6 +65,9 @@ func OutgoingFromURL(client *sqs.Client, url string) (chan string, chan error, e
 	return ch, errch, nil
 }
 
+// Outgoing creates a channel from a queue name that will forward all the data
+// to the provided queue.  An error channel is also provided in case any error
+// occurs during the transmission.
 func Outgoing(client *sqs.Client, name string) (chan string, chan error, error) {
 	url, err := client.CreateQueue(name)
 	if err != nil {
