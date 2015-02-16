@@ -7,7 +7,6 @@ import (
 	"github.com/truveris/sqs"
 )
 
-
 func IncomingFromURL(client *sqs.Client, url string) (<-chan *sqs.Message, <-chan error, error) {
 	ch := make(chan *sqs.Message)
 	errch := make(chan error)
@@ -17,17 +16,19 @@ func IncomingFromURL(client *sqs.Client, url string) (<-chan *sqs.Message, <-cha
 			req := sqs.NewReceiveMessageRequest(url)
 			req.Set("WaitTimeSeconds", "20")
 
-			msg, err := client.GetSingleMessageFromRequest(req)
+			msgs, err := client.GetMessagesFromRequest(req)
 			if err != nil {
 				errch <- err
 				continue
 			}
 
-			if msg == nil {
+			if msgs == nil {
 				continue
 			}
 
-			ch <- msg
+			for _, msg := range msgs {
+				ch <- msg
+			}
 		}
 	}()
 
