@@ -37,11 +37,13 @@ func main() {
 		// do your thing
 	}
 
+    var body string
+
 	for {
 		select {
-			case err <- errch:
+			case err = <-errch:
 				// do your error thing
-			case body <- ch:
+			case body = <-ch:
 				// do your thing, body is a string
 				fmt.Printf("body: " + body)
 		}
@@ -52,7 +54,7 @@ func main() {
 Using ReadBody() does not allow you to acknowledge the reception of the message,
 the message is deleted automatically after being delivered to the channel.  If
 you want to allow the message to go back in the queue automatically in case of
-failure, use the sqschan.ReadMsg().
+failure, use the sqschan.Incoming().
 
 ## Example: Message channel
 This example allows the use of the entire response with all its meta-data:
@@ -66,18 +68,20 @@ import (
 func main() {
 	client := sqs.Client(...)
 
-	ch, errch, err := sqschan.ReadMsg("jimmy-queue")
+	ch, errch, err := sqschan.Incoming(client, "jimmy-queue")
 	if err != nil {
 		// do your thing
 	}
 
+    var msg *sqs.Message
+
 	for {
 		select {
-			case err <- errors:
+			case err = <-errch:
 				// do your error thing
-			case msg <- queue:
+			case msg = <-ch:
 				// do your thing.
-				client.DeleteMessage(msg.QueueURL, msg.ReceiptHandle)
+				client.DeleteMessage(msg)
 		}
 	}
 }
