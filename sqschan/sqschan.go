@@ -5,7 +5,22 @@ package sqschan
 
 import (
 	"github.com/truveris/sqs"
+	"sort"
 )
+
+// BySentTimestamp is used to sort SQS Messages by their timestamp if multipled
+// are fetched at the same time.
+type BySentTimestamp []*sqs.Message
+
+func (a BySentTimestamp) Len() int {
+	return len(a)
+}
+func (a BySentTimestamp) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a BySentTimestamp) Less(i, j int) bool {
+	return a[i].SentTimestamp < a[j].SentTimestamp
+}
 
 // IncomingFromURL creates a receiving channel from the provided queue URL.  An
 // error channel is created as well in case any error is encountered.
@@ -18,12 +33,15 @@ func IncomingFromURL(client *sqs.Client, url string) (<-chan *sqs.Message, <-cha
 			req := sqs.NewReceiveMessageRequest(url)
 			req.Set("WaitTimeSeconds", "20")
 			req.Set("MaxNumberOfMessages", "10")
+			req.Set("AttributeName", "All")
 
 			msgs, err := client.GetMessagesFromRequest(req)
 			if err != nil {
 				errch <- err
 				continue
 			}
+
+			sort.Sort(BySentTimestamp(msgs))
 
 			for _, msg := range msgs {
 				ch <- msg

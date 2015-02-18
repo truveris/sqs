@@ -75,44 +75,26 @@ func (client *Client) Get(url string) (*http.Response, error) {
 // Return a single message body, with its ReceiptHandle. A lack of message is
 // not considered an error but *Message will be nil.
 func (client *Client) GetMessagesFromRequest(request *Request) ([]*Message, error) {
-	var m ReceiveMessageResult
-	var messages []*Message
-
-	// These two settings are required for this function to function.
-	request.Set("AttributeName", "SenderId")
-
 	resp, err := client.Get(request.URL())
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New(string(body))
+		return nil, errors.New(string(data))
 	}
 
-	err = xml.Unmarshal(body, &m)
+	r, err := NewReceiveMessageResponse(data)
 	if err != nil {
 		return nil, err
 	}
-
-	for i := 0; i < len(m.Bodies); i++ {
-		msg := &Message{
-			QueueURL:      request.QueueURL,
-			Body:          m.Bodies[i],
-			ReceiptHandle: m.ReceiptHandles[i],
-			UserID:        m.Values[i],
-		}
-
-		messages = append(messages, msg)
-	}
-
-	return messages, nil
+	return r.GetMessages()
 }
 
 // Return a single message with its ReceiptHandle. A lack of message is not
