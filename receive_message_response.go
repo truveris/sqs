@@ -31,7 +31,7 @@ type ReceiveMessageResponse struct {
 	}
 }
 
-func (r *ReceiveMessageResponse) GetMessages() ([]*Message, error) {
+func (r *ReceiveMessageResponse) GetMessages(QueueURL string) ([]*Message, error) {
 	var err error
 	var messages []*Message
 
@@ -41,6 +41,7 @@ func (r *ReceiveMessageResponse) GetMessages() ([]*Message, error) {
 			ReceiptHandle: strings.Trim(rawmsg.ReceiptHandle, " \t\n\r"),
 			MD5:           strings.Trim(rawmsg.MD5OfBody, " \t\n\r"),
 			Body:          rawmsg.Body,
+			QueueURL:      QueueURL,
 		}
 
 		// That should never be a problem unless some underlying

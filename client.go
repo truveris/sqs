@@ -94,7 +94,7 @@ func (client *Client) GetMessagesFromRequest(request *Request) ([]*Message, erro
 	if err != nil {
 		return nil, err
 	}
-	return r.GetMessages()
+	return r.GetMessages(request.QueueURL)
 }
 
 // Return a single message with its ReceiptHandle. A lack of message is not
